@@ -4,6 +4,7 @@ this is project for data analyst with python final submission
 
 ## tugas akhir data analysis dicoding
 
+
 ## Setup environment - jupyter file
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
@@ -17,7 +18,7 @@ pip install -r requirements.txt
 ```bash
 mkdir proyek_dashboard
 cd proyek_dashboard
-pip install -r dashboard_requirements.txt
+pip install -r requirements.txt
 ```
 ## Run streamlit app
 
