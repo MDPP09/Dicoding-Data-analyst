@@ -15,7 +15,8 @@ pip install -r requirements.txt
 ## Setup environment- dashboard
 
 ```bash
-cd dashboard
+mkdir proyek_dashboard
+cd proyek_dashboard
 pip install -r dashboard_requirements.txt
 ```
 ## Run streamlit app
