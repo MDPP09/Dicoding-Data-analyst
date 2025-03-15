@@ -1,77 +1,72 @@
+import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-import streamlit as st
 
-# Streamlit App
-st.set_page_config(page_title="Analisis data E-commerce", layout="wide")
-st.title("📊 Analisis data E-commerce")
+# Load dataset
+all_df = pd.read_csv("main_dataset.csv")
 
-# Sidebar
+# Convert order timestamp to datetime
+all_df["order_purchase_timestamp"] = pd.to_datetime(all_df["order_purchase_timestamp"])
+all_df["order_date"] = all_df["order_purchase_timestamp"].dt.date
+all_df["order_year"] = all_df["order_purchase_timestamp"].dt.year
+all_df["order_month"] = all_df["order_purchase_timestamp"].dt.month
 
-st.sidebar.header("Navigasi")
-page = st.sidebar.radio("Pilih Halaman", ["Preview Dataset", "Visualization & Analysis", "Conclusion"])
-st.sidebar.markdown("---")
-st.sidebar.write("📌 **Copyright Dafa putra © 2025**")
-st.sidebar.markdown("[📂 dataset yang digunakan](https://drive.google.com/file/d/1MsAjPM7oKtVfJL_wRp1qmCajtSG1mdcK/view)")
+st.title("Dashboard E-Commerce")
 
-# Load Data
-df = pd.read_csv('main_dataset.csv')
+# Sidebar filter
+year_filter = st.sidebar.selectbox("Pilih Tahun", sorted(all_df["order_year"].unique()), index=0)
+month_filter = st.sidebar.selectbox("Pilih Bulan", sorted(all_df["order_month"].unique()), index=0)
 
-if page == "Preview Dataset":
-    st.subheader("📌 Preview Dataset")
-    st.dataframe(df.head(20))
+df_filtered = all_df[(all_df["order_year"] == year_filter) & (all_df["order_month"] == month_filter)]
 
-elif page == "Visualization & Analysis":
-    st.markdown("### 📅 Tren Belanja Berdasarkan Hari")
-    purchase_trend = df.groupby('order_purchase_day').size().reset_index(name='count')
-    date_trend = df.groupby('order_purchase_date').size().reset_index(name='count')
-    min_purchase_date = date_trend.loc[date_trend['count'].idxmin()]
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.barplot(x=purchase_trend['order_purchase_day'], y=purchase_trend['count'], palette="coolwarm", ax=ax)
-    ax.set_title("Tren Belanja Berdasarkan Hari")
-    ax.set_xlabel("Hari")
-    ax.set_ylabel("Jumlah Transaksi")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-    st.pyplot(fig)
-    st.write(f"📉 **Tanggal dengan jumlah transaksi paling sedikit**: {min_purchase_date['order_purchase_date']} dengan {min_purchase_date['count']} transaksi.")
-
-    st.markdown("### 🏙️ Kota dengan Pembelian Terbanyak Setiap Bulan")
-    top_cities_monthly = df.groupby(['order_purchase_month', 'customer_city']).size().reset_index(name='count')
-    top_cities_monthly = top_cities_monthly.sort_values(['order_purchase_month', 'count'], ascending=[True, False]).groupby('order_purchase_month').head(2)
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.barplot(x=top_cities_monthly['customer_city'], y=top_cities_monthly['count'], palette="Blues_r", ax=ax)
-    ax.set_xlabel("Kota")
-    ax.set_ylabel("Jumlah Transaksi")
-    ax.set_title("Dua Kota dengan Pembelian Terbanyak Setiap Bulan")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-    st.pyplot(fig)
-
-    st.markdown("### 💳 Metode Pembayaran Terbanyak Setiap Hari")
-    payment_trend = df.groupby(['order_purchase_day', 'payment_type']).size().reset_index(name='count')
-    payment_trend = payment_trend.sort_values(['order_purchase_day', 'count'], ascending=[True, False]).groupby('order_purchase_day').head(3)
-
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.barplot(x=payment_trend['payment_type'], y=payment_trend['count'], palette="viridis", ax=ax)
+# 1️⃣ Metode Pembayaran yang Paling Dominan
+st.subheader("Metode Pembayaran yang Paling Dominan")
+payment_counts = df_filtered["payment_type"].value_counts()
+if not payment_counts.empty:
+    fig, ax = plt.subplots()
+    payment_counts.plot(kind="bar", color="skyblue", ax=ax)
     ax.set_xlabel("Metode Pembayaran")
-    ax.set_ylabel("Jumlah Transaksi")
-    ax.set_title("Tiga Metode Pembayaran Terbanyak Setiap Hari")
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+    ax.set_ylabel("Jumlah Penggunaan")
+    ax.set_title("Distribusi Metode Pembayaran")
     st.pyplot(fig)
+else:
+    st.write("Tidak ada data untuk bulan dan tahun yang dipilih.")
 
-elif page == "Conclusion":
-    st.subheader("📌 Conclusion")
-    
-    st.markdown("### Conclution pertanyaan 1")
-    st.write("**Bagaimana trend belanja berdasarkan hari dan tanggal berapakah yang paling sedikit belanjanya?**")
-    st.write("Hari Selasa adalah hari yang memiliki jumlah transaksi terbanyak di antara hari lainnya, dan hari Sabtu memiliki jumlah transaksi paling sedikit.")
-    
-    st.markdown("### Conclution pertanyaan 2")
-    st.write("**Kota manakah dengan pembelian terbanyak setiap bulannya?**")
-    st.write("Kota Sao Paulo adalah kota dengan pembelian terbanyak setiap bulannya, disusul dengan kota Rio de Janeiro dan kota-kota lainnya.")
-    
-    st.markdown("### Conclution pertanyaan 3")
-    st.write("**Metode pembayaran apakah yang paling banyak digunakan setiap harinya?**")
-    st.write("Credit card menjadi opsi pembayaran terbanyak setiap hari, disusul dengan boleto kemudian voucher.")
+# 2️⃣ Hubungan antara Harga Produk dan Biaya Pengiriman
+st.subheader("Hubungan antara Harga Produk dan Biaya Pengiriman")
+fig, ax = plt.subplots()
+ax.scatter(df_filtered["price"], df_filtered["freight_value"], alpha=0.5, color="purple")
+ax.set_xlabel("Harga Produk (BRL)")
+ax.set_ylabel("Biaya Pengiriman (BRL)")
+ax.set_title("Scatter Plot: Harga Produk vs Biaya Pengiriman")
+st.pyplot(fig)
+
+# 3️⃣ Tren Transaksi dari Waktu ke Waktu
+st.subheader("Tren Transaksi dari Waktu ke Waktu")
+order_trend = df_filtered.groupby("order_date")["payment_value"].sum()
+fig, ax = plt.subplots(figsize=(12, 5))
+ax.plot(order_trend.index, order_trend.values, marker="o", linestyle="-", color="red")
+ax.set_xlabel("Tanggal")
+ax.set_ylabel("Total Nilai Transaksi (BRL)")
+ax.set_title("Tren Nilai Transaksi Seiring Waktu")
+plt.xticks(rotation=45)
+ax.legend(["Total Transaksi"])
+ax.grid()
+st.pyplot(fig)
+
+# 4️⃣ Jumlah Angsuran Berdasarkan Metode Pembayaran
+st.subheader("Jumlah Angsuran Berdasarkan Metode Pembayaran")
+installments_avg = df_filtered.groupby("payment_type")["payment_installments"].mean().sort_values()
+if not installments_avg.empty:
+    fig, ax = plt.subplots()
+    installments_avg.plot(kind="bar", color="green", ax=ax)
+    ax.set_xlabel("Metode Pembayaran")
+    ax.set_ylabel("Rata-rata Jumlah Angsuran")
+    ax.set_title("Rata-rata Jumlah Angsuran per Metode Pembayaran")
+    st.pyplot(fig)
+else:
+    st.write("Tidak ada data untuk bulan dan tahun yang dipilih.")
+
+st.write("\n\n**Gunakan sidebar untuk memfilter berdasarkan tahun dan bulan!**")
+
+st.markdown("© 2025, Dashboard E-Commerce Analysis dafa putra. All Rights Reserved.")
